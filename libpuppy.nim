@@ -7,13 +7,16 @@ type
     key  : ptr cchar
     value: ptr cchar
 
+template create_headers(seq: seq[Header], headers: ptr puppy_header_t, headers_len: csize_t) =
+  for i in 0 .. headers_len:
+    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
+    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+
 # Default timeout: 60
 proc puppy_delete(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, timeout: cfloat): ptr puppy_response_t {.exportc.} =
   let res = create Response
   var seq: seq[Header] = @[]
-  for i in 0 .. headers_len:
-    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
-    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+  create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.delete($url, seq, timeout)
           except CatchableError:
@@ -24,9 +27,7 @@ proc puppy_delete(url: cstring, headers: ptr puppy_header_t, headers_len: csize_
 proc puppy_get(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, timeout: cfloat): ptr puppy_response_t {.exportc.} =
   let res = create Response
   var seq: seq[Header] = @[]
-  for i in 0 .. headers_len:
-    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
-    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+  create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.get($url, seq, timeout)
           except CatchableError:
@@ -50,9 +51,7 @@ proc puppy_get(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, 
 proc puppy_patch(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, body: cstring, timeout: cfloat): ptr puppy_response_t {.exportc.} =
   let res = create Response
   var seq: seq[Header] = @[]
-  for i in 0 .. headers_len:
-    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
-    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+  create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.patch($url, seq, $body, timeout)
           except CatchableError:
@@ -63,9 +62,7 @@ proc puppy_patch(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t
 proc puppy_post(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, body: cstring, timeout: cfloat): ptr puppy_response_t {.exportc.} =
   let res = create Response
   var seq: seq[Header] = @[]
-  for i in 0 .. headers_len:
-    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
-    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+  create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.post($url, seq, $body, timeout)
           except CatchableError:
@@ -76,9 +73,7 @@ proc puppy_post(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t,
 proc puppy_put(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, body: cstring, timeout: cfloat): ptr puppy_response_t {.exportc.} =
   let res = create Response
   var seq: seq[Header] = @[]
-  for i in 0 .. headers_len:
-    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
-    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+  create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.put($url, seq, $body, timeout)
           except CatchableError:
@@ -88,9 +83,7 @@ proc puppy_put(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, 
 
 proc puppy_fetch_str(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t): ptr cchar {.exportc.} =
   var seq: seq[Header] = @[]
-  for i in 0 .. headers_len:
-    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
-    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+  create_headers(seq, headers, headers_len)
   let res = try:
             puppy.fetch($url, seq)
           except CatchableError:
@@ -103,9 +96,7 @@ proc puppy_fetch_str(url: cstring, headers: ptr puppy_header_t, headers_len: csi
 proc puppy_new_request(url: cstring, verb: cstring, headers: ptr puppy_header_t, headers_len: csize_t, timeout: cfloat): ptr puppy_request_t {.exportc.} =
   let req = create Request
   var seq: seq[Header] = @[]
-  for i in 0 .. headers_len:
-    let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
-    seq.add(Header(key: $cast[cstring](header.key), value: $cast[cstring](header.value) ))
+  create_headers(seq, headers, headers_len)
   req[] = try:
             puppy.newRequest($url, $verb, seq, timeout)
           except CatchableError:
