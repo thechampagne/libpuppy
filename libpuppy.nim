@@ -157,3 +157,21 @@ proc puppy_response_code(res: ptr puppy_response_t): c_int {.exportc.} =
 proc puppy_request_set_body(req: ptr puppy_request_t, body: cstring) {.exportc.} =
   let req_nim = cast[ptr Request](req)
   req_nim[].body = $body
+
+proc puppy_request_destroy(req: ptr puppy_request_t) {.exportc.} =
+  if req != nil:
+    free(cast[ptr Request](req))
+
+proc puppy_response_destroy(res: ptr puppy_response_t) {.exportc.} =
+  if res != nil:
+    free(cast[ptr Response](res))
+
+proc puppy_headers_destroy(headers: ptr puppy_header_t, headers_len: csize_t) {.exportc.} =
+  if headers != nil:
+    for i in 0 .. headers_len:
+      let header = cast[ptr UncheckedArray[puppy_header_t]](headers)[i]
+      if header.key != nil:
+        free(header.key)
+      if header.value != nil:
+        free(header.value)
+    free(headers)
