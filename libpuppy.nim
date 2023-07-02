@@ -1,5 +1,8 @@
 import puppy
 
+proc malloc(_: csize_t): pointer {.importc.}
+proc free(_: pointer) {.importc.}
+
 type
   puppy_request_t  = object
   puppy_response_t = object
@@ -14,24 +17,24 @@ template create_headers(seq: seq[Header], headers: ptr puppy_header_t, headers_l
 
 # Default timeout: 60
 proc puppy_delete(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, timeout: cfloat): ptr puppy_response_t {.exportc.} =
-  let res = create Response
+  let res = cast[ptr Response](malloc(csize_t(sizeof Response)))
   var seq: seq[Header] = @[]
   create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.delete($url, seq, timeout)
           except CatchableError:
-            dealloc res
+            free(res)
             return nil
   return cast[ptr puppy_response_t](res)
 
 proc puppy_get(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, timeout: cfloat): ptr puppy_response_t {.exportc.} =
-  let res = create Response
+  let res = cast[ptr Response](malloc(csize_t(sizeof Response)))
   var seq: seq[Header] = @[]
   create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.get($url, seq, timeout)
           except CatchableError:
-            dealloc res
+            free(res)
             return nil
   return cast[ptr puppy_response_t](res)
 
@@ -49,35 +52,35 @@ proc puppy_get(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, 
 #   return cast[ptr puppy_response_t](res)
 
 proc puppy_patch(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, body: cstring, timeout: cfloat): ptr puppy_response_t {.exportc.} =
-  let res = create Response
+  let res = cast[ptr Response](malloc(csize_t(sizeof Response)))
   var seq: seq[Header] = @[]
   create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.patch($url, seq, $body, timeout)
           except CatchableError:
-            dealloc res
+            free(res)
             return nil
   return cast[ptr puppy_response_t](res)
 
 proc puppy_post(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, body: cstring, timeout: cfloat): ptr puppy_response_t {.exportc.} =
-  let res = create Response
+  let res = cast[ptr Response](malloc(csize_t(sizeof Response)))
   var seq: seq[Header] = @[]
   create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.post($url, seq, $body, timeout)
           except CatchableError:
-            dealloc res
+            free(res)
             return nil
   return cast[ptr puppy_response_t](res)
 
 proc puppy_put(url: cstring, headers: ptr puppy_header_t, headers_len: csize_t, body: cstring, timeout: cfloat): ptr puppy_response_t {.exportc.} =
-  let res = create Response
+  let res = cast[ptr Response](malloc(csize_t(sizeof Response)))
   var seq: seq[Header] = @[]
   create_headers(seq, headers, headers_len)
   res[] = try:
             puppy.put($url, seq, $body, timeout)
           except CatchableError:
-            dealloc res
+            free(res)
             return nil
   return cast[ptr puppy_response_t](res)
 
@@ -88,42 +91,42 @@ proc puppy_fetch_str(url: cstring, headers: ptr puppy_header_t, headers_len: csi
             puppy.fetch($url, seq)
           except CatchableError:
             return nil
-  var cstr = cast[ptr cchar](alloc((sizeof(cchar) * res.len) + 1))
+  var cstr = cast[ptr cchar](malloc(csize_t(sizeof(cchar) * res.len) + 1))
   copyMem(cstr, cast[pointer](unsafeAddr res), res.len)
   cast[ptr UncheckedArray[cchar]](cstr)[res.len] = '\0'
   return cstr
 
 proc puppy_new_request(url: cstring, verb: cstring, headers: ptr puppy_header_t, headers_len: csize_t, timeout: cfloat): ptr puppy_request_t {.exportc.} =
-  let req = create Request
+  let req = cast[ptr Request](malloc(csize_t(sizeof Request)))
   var seq: seq[Header] = @[]
   create_headers(seq, headers, headers_len)
   req[] = try:
             puppy.newRequest($url, $verb, seq, timeout)
           except CatchableError:
-            dealloc req
+            free(req)
             return nil
   return cast[ptr puppy_request_t](req)
 
 proc puppy_fetch(req: ptr puppy_request_t): ptr puppy_response_t {.exportc.} =
   let req_nim = cast[ptr Request](req)
-  let res = create Response
+  let res = cast[ptr Response](malloc(csize_t(sizeof Response)))
   res[] = try:
             puppy.fetch(req_nim[])
           except CatchableError:
-            dealloc res
+            free(res)
             return nil
   return cast[ptr puppy_response_t](res)
 
 proc puppy_response_headers(res: ptr puppy_response_t, out_len: ptr csize_t): ptr puppy_header_t {.exportc.} =
   let res_nim = cast[ptr Response](res)
   let headers = res_nim[].headers
-  var carray = cast[ptr puppy_header_t](alloc(sizeof(puppy_header_t) * headers.len))
+  var carray = cast[ptr puppy_header_t](malloc(csize_t(sizeof(puppy_header_t) * headers.len)))
   for i, v in headers:
     let h = cast[Header](v)
-    var key = cast[ptr cchar](alloc((sizeof(cchar) * h.key.len) + 1))
+    var key = cast[ptr cchar](malloc(csize_t(sizeof(cchar) * h.key.len) + 1))
     copyMem(key, cast[pointer](unsafeAddr h.key), h.key.len)
     cast[ptr UncheckedArray[cchar]](key)[h.key.len] = '\0'
-    var value = cast[ptr cchar](alloc((sizeof(cchar) * h.value.len) + 1))
+    var value = cast[ptr cchar](malloc(csize_t(sizeof(cchar) * h.value.len) + 1))
     copyMem(value, cast[pointer](unsafeAddr h.value), h.value.len)
     cast[ptr UncheckedArray[cchar]](value)[h.value.len] = '\0'
     let header = puppy_header_t(key: key, value: value )
@@ -134,7 +137,7 @@ proc puppy_response_headers(res: ptr puppy_response_t, out_len: ptr csize_t): pt
 proc puppy_response_url(res: ptr puppy_response_t): ptr cchar {.exportc.} =
   let res_nim = cast[ptr Response](res)
   let url = res_nim[].url
-  var cstr = cast[ptr cchar](alloc((sizeof(cchar) * url.len) + 1))
+  var cstr = cast[ptr cchar](malloc(csize_t(sizeof(cchar) * url.len) + 1))
   copyMem(cstr, cast[pointer](unsafeAddr url), url.len)
   cast[ptr UncheckedArray[cchar]](cstr)[url.len] = '\0'
   return cstr
@@ -142,7 +145,7 @@ proc puppy_response_url(res: ptr puppy_response_t): ptr cchar {.exportc.} =
 proc puppy_response_body(res: ptr puppy_response_t): ptr cchar {.exportc.} =
   let res_nim = cast[ptr Response](res)
   let body = res_nim[].body
-  var cstr = cast[ptr cchar](alloc((sizeof(cchar) * body.len) + 1))
+  var cstr = cast[ptr cchar](malloc(csize_t(sizeof(cchar) * body.len) + 1))
   copyMem(cstr, cast[pointer](unsafeAddr body), body.len)
   cast[ptr UncheckedArray[cchar]](cstr)[body.len] = '\0'
   return cstr
